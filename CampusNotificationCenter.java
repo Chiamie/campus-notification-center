@@ -36,11 +36,75 @@ System.out.println(changeSubscription(topics, newTopic,
 "4", students));
 
 
-System.out.println(hasSubscribedTo("4", "Fees",
+System.out.println(hasSubscribedTo("Fees", "4", 
 students));
 
 
+System.out.println(unsubscribeTopic("Feyi", topics,
+"4",  students));
 
+System.out.println(unsubscribeTopic("Emergency", topics,
+"4",  students));
+
+
+System.out.println(unsubscribeTopic("Fees", topics,
+"4",  students));
+
+System.out.println(Arrays.toString(getStudentSubscribedTopics("4",
+students)));
+
+
+}
+
+
+
+public static String unsubscribeTopic(String topic, String[] topics,
+String studentId, String[][][] students) {
+
+String[] updatedSubscribedTopics;
+
+if(!isTopicValid(topics, topic)) 
+return "You cannot unsubscribe from " + topic + "!";
+
+if(hasSubscribedTo(topic, studentId, students)){
+String[] subscribedTopics =  getStudentSubscribedTopics(studentId, students);
+
+updatedSubscribedTopics = new String[subscribedTopics.length - 1];
+
+for(int count = 0; count < subscribedTopics.length; count++){
+if(!topic.equals(subscribedTopics[count]))
+updatedSubscribedTopics[count] = subscribedTopics[count];
+}
+updateStudentSubscribedTopics(studentId, updatedSubscribedTopics, 
+students);
+
+}
+return "You've successfully unsunscribed from " + topic + "!";
+}
+
+
+private static String[] updateStudentSubscribedTopics(String studentId, 
+String[] updatedSubscribedTopics, String[][][] students) {
+
+for(int index = 0; index < students.length; index++){
+
+if(studentId.equals(students[index][0][0])) 
+students[index][3] = updatedSubscribedTopics;
+}
+return updatedSubscribedTopics;
+}
+
+public static String[] getStudentSubscribedTopics(String studentId,
+String[][][] students){
+
+String[] subscribedTopics = {};
+for(int index = 0; index < students.length; index++){
+if(studentId.equals(students[index][0][0])){
+subscribedTopics = students[index][3];
+break;
+}
+}
+return subscribedTopics;
 }
 
 
@@ -51,7 +115,7 @@ boolean isValid = isTopicValid(topics, newTopic);
 if(!isTopicValid(topics, newTopic))
 return "You cannot subscribe to " + newTopic + "!";
 
-if(hasSubscribedTo(studentId, newTopic, students))
+if(hasSubscribedTo(newTopic, studentId, students))
 return "You've already subscribed to " + newTopic + "!";
 
 return subscribeToTopic(students, studentId, newTopic);
@@ -60,7 +124,7 @@ return subscribeToTopic(students, studentId, newTopic);
 
 
 
-public static boolean hasSubscribedTo(String studentId, String newTopic,
+public static boolean hasSubscribedTo(String newTopic, String studentId,
 String[][][] students){
 
 String[] subscribedTopics;
