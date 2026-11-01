@@ -22,19 +22,101 @@ String studentTable = viewStudents(students);
 System.out.print(studentTable);
 
 
+String output = subscribeToTopic(students, 
+"4", "Fees");
+System.out.println(output);
+
+System.out.println(changeSubscription(topics, "Exams", "4", students));
+
+System.out.println(isTopicValid(topics, "Exams"));
+
+String newTopic = "Emergency";
+
+System.out.println(changeSubscription(topics, newTopic, 
+"4", students));
 
 
-
-
-
-
-
-
-
+System.out.println(hasSubscribedTo("4", "Fees",
+students));
 
 
 
 }
+
+
+public static String changeSubscription(String[] topics, String newTopic, String studentId, String[][][] students){
+
+boolean isValid = isTopicValid(topics, newTopic);
+
+if(!isTopicValid(topics, newTopic))
+return "You cannot subscribe to " + newTopic + "!";
+
+if(hasSubscribedTo(studentId, newTopic, students))
+return "You've already subscribed to " + newTopic + "!";
+
+return subscribeToTopic(students, studentId, newTopic);
+
+}
+
+
+
+public static boolean hasSubscribedTo(String studentId, String newTopic,
+String[][][] students){
+
+String[] subscribedTopics;
+
+for(int index = 0; index < students.length; index++){
+if(studentId.equals(students[index][0][0])){
+subscribedTopics = students[index][3];
+
+for(int count = 0; count < subscribedTopics.length; count++){
+if(newTopic.equals(subscribedTopics[count]))
+return true;
+}
+
+break;
+}
+}
+return false;
+}
+
+public static boolean isTopicValid(String[] topics, String newTopic) {
+
+if(newTopic.equals("Emergency"))
+return false;
+
+for(int index = 0; index < topics.length; index++){
+if(newTopic.equals(topics[index])) return true;
+}
+
+return false;
+}
+
+
+public static String subscribeToTopic(String[][][] students, 
+String studentId, String newTopic) {
+
+
+String[] newListOfSubscribedTopics = {};
+for(int index = 0; index < students.length; index++){
+
+
+if(studentId.equals(students[index][0][0])) {
+String studentSubscribedTopics = String.join(", ", students[index][3]);
+studentSubscribedTopics += ", " + newTopic;
+newListOfSubscribedTopics = studentSubscribedTopics.split(", ");
+students[index][3] = newListOfSubscribedTopics;
+break;
+}
+
+
+}
+return "Updated Topics subscription to " + String.join(", ", newListOfSubscribedTopics);
+
+
+}
+
+
 
 public static String getTableFormat(){
 
