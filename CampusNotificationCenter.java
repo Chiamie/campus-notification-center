@@ -54,7 +54,80 @@ System.out.println(Arrays.toString(getStudentSubscribedTopics("4",
 students)));
 
 
+System.out.println(isChannelValid("SMS", channels));
+System.out.println(isChannelValid("smart", channels));
+
+System.out.println(Arrays.toString(getStudentEnabledChannels("4", students)));
+
+System.out.println(isChannelEnabled("SMS", channels, "4", students));
+System.out.println(isChannelEnabled("App", channels, "4", students));
+
+System.out.println(enableChannel("4", "App", channels, students));
+System.out.println(enableChannel("4", "SMS", channels, students));
 }
+
+
+
+
+
+
+
+
+
+
+
+
+public static String enableChannel(String studentId, String newChannel,
+String[] channels, String[][][] students) {
+
+if(isChannelValid(newChannel, channels)){
+if(isChannelEnabled(newChannel, channels, 
+studentId, students)) 
+return newChannel + " is already enabled!";
+
+} else
+return newChannel + " not an available channel!";
+
+String[] studentEnabledChannels = getStudentEnabledChannels(studentId, students);
+
+String[] updatedStudentEnabledChannels = Arrays.copyOf(getStudentEnabledChannels(studentId, students), 
+studentEnabledChannels.length + 1);
+
+updatedStudentEnabledChannels[studentEnabledChannels.length] = newChannel;
+return String.join(", ", updatedStudentEnabledChannels);
+
+}
+
+private static boolean isChannelEnabled(String newChannel, String[] channels, 
+String studentId, String[][][] students) {
+String[] studentEnabledChannels = getStudentEnabledChannels(studentId, students);
+for(String channel : studentEnabledChannels) {
+if(newChannel.equals(channel)) return true;
+}
+return false;
+}
+
+
+private static String[] getStudentEnabledChannels(String studentId, 
+String[][][] students){
+
+
+for(int index = 0; index < students.length; index++){
+if(studentId.equals(students[index][0][0]))
+return students[index][4];
+}
+return new String[0];
+}
+
+
+private static boolean isChannelValid(String newChannel, String[] channels) {
+
+for(int index = 0; index < channels.length; index++){
+if(newChannel.equals(channels[index])) return true;
+}
+return false;
+}
+
 
 
 
