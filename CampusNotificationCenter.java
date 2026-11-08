@@ -73,7 +73,72 @@ System.out.println(enableChannel("4", "SMS", channels, students));
 System.out.println(isEnabledChannelsSizeOneFor("4", students));
 System.out.println(disableChannel("4", "Email", channels, students));
 System.out.println(disableChannel("4", "App", channels, students));
+
+updateStudentDND("4", students);
+System.out.println(getStudentDND("4", students));
+System.out.println(toggleDND("4", students));
+System.out.println(getStudentDND("4", students));
+
 }
+
+
+public static String toggleDND(String studentId, String[][][] students){
+
+updateStudentDND(studentId, students);
+//return "Do not Disturb is now " + students[Integer.parseInt(studentId) - 1][5][0];
+return "Do not Disturb is now " + getStudentDND(studentId, students);
+
+}
+
+private static void updateStudentDND(String studentId, String[][][] students){
+for(int index = 0; index < students.length; index++){
+if(studentId.equals(students[index][0][0]) && students[index][5][0].equals("On"))
+students[index][5][0] = "Off";
+
+else if(studentId.equals(students[index][0][0]) && students[index][5][0].equals("Off") )
+students[index][5][0] = "On";
+}
+}
+
+private static String getStudentDND(String studentId, String[][][] students){
+for(int index = 0; index < students.length; index++){
+if(studentId.equals(students[index][0][0]))
+return students[index][5][0];
+
+}
+return studentId + "not found";
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 public static String disableChannel(String studentId, String newChannel,
