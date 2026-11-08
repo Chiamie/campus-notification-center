@@ -57,23 +57,59 @@ students)));
 System.out.println(isChannelValid("SMS", channels));
 System.out.println(isChannelValid("smart", channels));
 
+System.out.println("Here" + isChannelValid("Events", channels));
+
+
 System.out.println(Arrays.toString(getStudentEnabledChannels("4", students)));
 
 System.out.println(isChannelEnabled("SMS", channels, "4", students));
 System.out.println(isChannelEnabled("App", channels, "4", students));
 
+System.out.println(enableChannel("4", "nta", channels, students));
 System.out.println(enableChannel("4", "App", channels, students));
+System.out.println(disableChannel("4", "App", channels, students));
 System.out.println(enableChannel("4", "SMS", channels, students));
+
+System.out.println(isEnabledChannelsSizeOneFor("4", students));
+System.out.println(disableChannel("4", "Email", channels, students));
+System.out.println(disableChannel("4", "App", channels, students));
 }
 
 
+public static String disableChannel(String studentId, String newChannel,
+String[] channels, String[][][] students) {
 
+if(isChannelValid(newChannel, channels)){
+if(!isChannelEnabled(newChannel, channels, 
+studentId, students))
+return newChannel + " is not enabled!";
+} else return newChannel + " is not a valid channel!";
 
+if(isEnabledChannelsSizeOneFor(studentId, students)) 
+return newChannel + " cannot be disabled!";
 
+String[] studentEnabledChannels = getStudentEnabledChannels(studentId, students);
+String[] updatedStudentEnabledChannels = new String[studentEnabledChannels.length - 1];
+int newIndex = 0;
+for(int index = 0; index < studentEnabledChannels.length; index++){
+if(!studentEnabledChannels[index].equals(newChannel)){
+updatedStudentEnabledChannels[newIndex] = studentEnabledChannels[index];
+newIndex++;
+}
+}
+updateChannels(studentId, updatedStudentEnabledChannels, students);
+return newChannel + " disabled successfully! Your enabled channel: " + 
+String.join(",", students[Integer.parseInt(studentId) - 1][4]);
+}
 
+private static boolean isEnabledChannelsSizeOneFor(String studentId,
+String[][][] students){
 
+String[] studentEnabledChannels = getStudentEnabledChannels(studentId, students);
+if(studentEnabledChannels.length == 1) return true;
+return false;
 
-
+}
 
 
 
@@ -85,8 +121,7 @@ if(isChannelEnabled(newChannel, channels,
 studentId, students)) 
 return newChannel + " is already enabled!";
 
-} else
-return newChannel + " not an available channel!";
+} else return newChannel + " not an available channel!";
 
 String[] studentEnabledChannels = getStudentEnabledChannels(studentId, students);
 
@@ -94,8 +129,22 @@ String[] updatedStudentEnabledChannels = Arrays.copyOf(getStudentEnabledChannels
 studentEnabledChannels.length + 1);
 
 updatedStudentEnabledChannels[studentEnabledChannels.length] = newChannel;
-return String.join(", ", updatedStudentEnabledChannels);
+updateChannels(studentId, updatedStudentEnabledChannels, students);
+return newChannel + " enabled successfully! These are your enabled channels " + 
+String.join(", ", updatedStudentEnabledChannels);
 
+}
+
+private static String[][][] updateChannels(String studentId, 
+String[] updatedStudentEnabledChannels, String[][][] students) {
+
+for(int index = 0; index < students.length; index++){
+if(studentId.equals(students[index][0][0])) {
+students[index][4] = updatedStudentEnabledChannels;
+return students;
+}
+}
+return null;
 }
 
 private static boolean isChannelEnabled(String newChannel, String[] channels, 
