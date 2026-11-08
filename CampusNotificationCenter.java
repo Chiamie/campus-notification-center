@@ -6,6 +6,7 @@ public static void main(String[] args){
 
 String[] topics = {"Fees", "Exams", "Assignments", "Events", "Emergency"};
 String[] channels = {"SMS", "Email", "App"};
+String[] audience = {"All", "100", "200", "300", "400"};
 
 String[][][] students = { 
 {{"1"}, {"Ada"}, {"100"}, {"Fees", "Exams", "Events"}, {"SMS", "App"}, {"Off"}},
@@ -78,8 +79,58 @@ updateStudentDND("4", students);
 System.out.println(getStudentDND("4", students));
 System.out.println(toggleDND("4", students));
 System.out.println(getStudentDND("4", students));
+System.out.println(publishNotification("topic", "Timetable Update",
+"The Physics exam has moved to Friday at 9am in Hall B.", "5", audience));
+}
+
+
+public static String publishNotification(String topic, String title,
+String message, String audienceToPublishTo, String[] audience) {
+
+if(message.isBlank())
+return "message must not be empty!";
+
+if(title.length() > 30)
+return "title must not exceed 30 characters!";
+
+if(!isAudienceValid(audienceToPublishTo, 
+audience)) return "Unknown audience!";
+
+return "passed";
 
 }
+
+
+
+private static boolean isAudienceValid(String audienceToPublishTo, 
+String[] audience){
+
+for(int index = 0; index < audience.length; index++){
+if(audienceToPublishTo.equals(audience[index]))
+return true;
+}
+return false;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 public static String toggleDND(String studentId, String[][][] students){
@@ -109,26 +160,6 @@ return students[index][5][0];
 return studentId + "not found";
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
