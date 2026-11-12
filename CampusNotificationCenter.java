@@ -1,4 +1,8 @@
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
+
 public class CampusNotificationCenter {
 
 public static void main(String[] args){
@@ -8,6 +12,7 @@ String[] topics = {"Fees", "Exams", "Assignments", "Events", "Emergency"};
 String[] channels = {"SMS", "Email", "App"};
 String[] audience = {"All", "100", "200", "300", "400"};
 
+
 String[][][] students = { 
 {{"1"}, {"Ada"}, {"100"}, {"Fees", "Exams", "Events"}, {"SMS", "App"}, {"Off"}},
 {{"2"}, {"Tunde"}, {"200"}, {"Exams", "Assignments"}, {"Email"}, {"Off"} },
@@ -16,8 +21,12 @@ String[][][] students = {
 {{"5"}, {"Ngozi"}, {"300"}, {"Fees", "Exams", "Assignments", "Events"}, {"Email", "App"},  {"Off"}},
 {{"6"}, {"Emeka"}, {"400"}, {"Assignments"}, {"SMS"}, {"Off"}}
 
-
 };
+
+//String[] notificationColumns = new String[4];
+ArrayList<String[]> notifications = new ArrayList<>();
+//ArrayList<String>[] studentsInbox = new ArrayList[students.length];
+//List<String> inbox = new ArrayList<>();
 
 String studentTable = viewStudents(students);
 System.out.print(studentTable);
@@ -81,6 +90,58 @@ System.out.println(toggleDND("4", students));
 System.out.println(getStudentDND("4", students));
 System.out.println(publishNotification("topic", "Timetable Update",
 "The Physics exam has moved to Friday at 9am in Hall B.", "5", audience));
+
+System.out.println("Students in 200 level are : " + Arrays.toString
+(filterStudentsByAudience("200", audience, students)));
+System.out.println("Students in 400 level are : " + Arrays.toString
+(filterStudentsByAudience("400", audience, students)));
+
+System.out.println("Students subscribed to Events are : " + Arrays.toString(
+getTopicSubscribers("Events", students)));
+System.out.println("Students subscribed to Exams are : " + Arrays.toString(
+getTopicSubscribers("Exams", students)));
+
+//System.out.println("here: " + getTopicSubscribers("Events",
+//students));
+
+
+
+System.out.println(Arrays.toString(getNonDndStudents(students)));
+//System.out.println(publishNonEmergencyTopics("Assignments", "Assignment 101",
+//"To be submiited tomorrow", "200", audience,
+//students, notifications));
+
+String[] studentsByLevelAndTopic = {"2", "3"};
+String[] activeDndStudents = getNonDndStudents(students);
+System.out.println(Arrays.toString(activeDndStudents));
+System.out.println(Arrays.toString(getActiveTopicSubscribersByLevel(studentsByLevelAndTopic,
+activeDndStudents)));
+
+
+//System.out.println("Here: " + getActiveTopicSubscribersByLevel(studentsByLevelAndTopic,
+//activeDndStudents));
+
+String[] activeTopicSubscribersByLevel = {"2", "3"};
+System.out.println(Arrays.deepToString(getChannelsToPublishTo(activeTopicSubscribersByLevel,
+students)));
+
+System.out.println("Unpublished: " + publishNonEmergencyTopics("Assignments", "Assignment 101",
+"To be submiited tomorrow", "200", audience,
+students, notifications));
+
+String[][] channelsToPublishTo = {{"Email"}, {"SMS", "Email", "App"}};
+System.out.println(convertToString(channelsToPublishTo));
+
+
+System.out.println(publishNonEmergencyTopicsOne("Assignments", "Assignment 101",
+"To be submiited tomorrow", "200", audience,
+students, notifications));
+
+
+System.out.println(publishNonEmergencyTopicsOne("Exams", "Timetable Update",
+"The Physics exam has moved to Friday at 9am in Hall B.", "All", audience,
+students, notifications));
+
 }
 
 
@@ -101,6 +162,324 @@ return "passed";
 }
 
 
+private static String publishNonEmergencyTopics(String topic, String title,
+String message, String audienceToPublishTo, String[] audience,
+String[][][] students, ArrayList<String[]> notifications){
+
+
+String[] studentsInSameLevel = filterStudentsByAudience(audienceToPublishTo,
+audience, students);
+String[] topicSubscribers = getTopicSubscribers(topic,
+students);
+String[] activeDndStudents = getNonDndStudents(students);
+
+String[] studentsByLevelAndTopic = filterStudentsByLevelAndTopic(studentsInSameLevel,
+topicSubscribers);
+
+String[] activeTopicSubscribersByLevel = getActiveTopicSubscribersByLevel(studentsByLevelAndTopic,
+activeDndStudents);
+
+String[][] channelsToPublishTo = getChannelsToPublishTo(activeTopicSubscribersByLevel,
+students);
+
+
+String unpublishedStudents = getUnpublishedStudents(activeTopicSubscribersByLevel,
+students);
+
+
+String inactive =  getInactiveTopicSubscribersByLevel(studentsByLevelAndTopic,
+activeTopicSubscribersByLevel);
+//return String.join(", ", studentsByLevelAndTopic);
+//return unpublishedStudents;
+return inactive;
+}
+
+private static String publishNonEmergencyTopicsOne(String topic, String title,
+String message, String audienceToPublishTo, String[] audience,
+String[][][] students, ArrayList<String[]> notifications){
+
+
+String[] studentsInSameLevel = filterStudentsByAudience(audienceToPublishTo,
+audience, students);
+String[] topicSubscribers = getTopicSubscribers(topic,
+students);
+String[] activeDndStudents = getNonDndStudents(students);
+
+String[] studentsByLevelAndTopic = filterStudentsByLevelAndTopic(studentsInSameLevel,
+topicSubscribers);
+
+String[] activeTopicSubscribersByLevel = getActiveTopicSubscribersByLevel(studentsByLevelAndTopic,
+activeDndStudents);
+
+String[][] channelsToPublishTo = getChannelsToPublishTo(activeTopicSubscribersByLevel,
+students);
+ 
+String notificationsReportEntry = generateNotificationReportEntry(channelsToPublishTo, notifications, students, 
+activeTopicSubscribersByLevel, studentsByLevelAndTopic);
+
+
+
+return notificationsReportEntry;
+}
+
+
+private static String generateNotificationReportEntry(String[][] channelsToPublishTo,
+ArrayList<String[]> notifications, String[][][] students,
+String[] activeTopicSubscribersByLevel, String[] studentsByLevelAndTopic){
+
+String[] notificationsColumn = new String[5];
+
+String notificationCount = "0";
+if(!notifications.isEmpty())
+notificationCount = (notifications.get(notifications.size() - 1)[0]);
+
+
+for(int counter = 0; counter < notificationsColumn.length; counter++){
+
+switch(counter) {
+case 0 -> notificationsColumn[counter] = Integer.toString(
+(Integer.parseInt(notificationCount) + 1));
+case 1 -> notificationsColumn[counter] = 
+String.join(", ", getPublishedStudentsName(activeTopicSubscribersByLevel,
+students));
+case 2 -> notificationsColumn[counter] = convertToString(channelsToPublishTo);
+//Arrays.deepToString(channelsToPublishTo);
+case 3 -> notificationsColumn[counter] = 
+getInactiveTopicSubscribersByLevel(studentsByLevelAndTopic, activeTopicSubscribersByLevel);
+case 4 -> notificationsColumn[counter] = getUnpublishedStudents(activeTopicSubscribersByLevel,
+students);
+}
+}
+
+notifications.add(notificationsColumn);
+
+
+
+
+
+String deliveredContent = formatDeliveryDetails(notificationsColumn);
+String heldContent = formatHeldDndDetails(notificationsColumn, students);
+String notificationReportFormat = "Notification #%s published%nDelivered: %s%nHeld (DND): %s%nNot subsrcibed / not in audience: %s%n";
+
+
+String notificationReportEntry = String.format(notificationReportFormat,
+notificationsColumn[0], deliveredContent, heldContent,
+notificationsColumn[4]);
+
+return notificationReportEntry;
+}
+
+
+private static String formatHeldDndDetails(String[] notificationsColumn,
+String[][][] students) {
+
+if(notificationsColumn[3]==null)
+return "No inactive topic subscribers by this level";
+
+String[] studentsHeld = notificationsColumn[3].split(", ");
+String heldStudents = "";
+for(int index = 0; index < studentsHeld.length; index++){
+
+heldStudents += getStudentName(studentsHeld[index], students) + ", ";
+}
+return heldStudents;
+
+}
+
+private static String formatDeliveryDetails(String[] notificationsColumn) {
+
+String deliveredContent = "";
+
+String[] elementTwo = notificationsColumn[1].split(", ");
+String[] elementThree = notificationsColumn[2].split("(?<=\\))\\s*(?=\\()");
+
+for(int index = 0; index < elementTwo.length; index++){
+deliveredContent += elementTwo[index];
+deliveredContent += elementThree[index];
+deliveredContent += ", ";
+}
+
+return deliveredContent;
+
+}
+
+private static String getUnpublishedStudents(String[] activeTopicSubscribersByLevel,
+String[][][] students) {
+
+String[] publishedStudentsName = getPublishedStudentsName(activeTopicSubscribersByLevel, students);
+
+String[] nameOfStudents = getAllStudentsName(students);
+
+Set<String> allStudents = new HashSet<>(Arrays.asList(nameOfStudents));
+Set<String> publishedStudentsNameSet = new HashSet<>(Arrays.asList(publishedStudentsName));
+
+
+Set<String> nameOfUnpublishedStudents = new HashSet<>(allStudents);
+nameOfUnpublishedStudents.removeAll(publishedStudentsNameSet);
+
+return String.join(", ", nameOfUnpublishedStudents);
+}
+
+private static String[] getAllStudentsName(String[][][] students){
+String[] nameOfStudents = new String[students.length];
+for(int index = 0; index < students.length; index++){
+nameOfStudents[index] = students[index][1][0];
+}
+
+return nameOfStudents;
+}
+
+private static String getStudentName(String studentId, String[][][] students) {
+
+String[] nameOfStudents = getAllStudentsName(students);
+int index = Integer.parseInt(studentId) - 1;
+return nameOfStudents[index];
+
+}
+
+private static String getInactiveTopicSubscribersByLevel(String[] studentsByLevelAndTopic,
+String[] activeTopicSubscribersByLevel){
+
+
+Set<String> setOfStudentsByLevelAndTopic = new HashSet<>(Arrays.asList(studentsByLevelAndTopic));
+Set<String> setOfActiveTopicSubscribersByLevel = new HashSet<>(Arrays.asList(activeTopicSubscribersByLevel));
+
+
+Set<String> setOfInactiveTopicSubscribersByLevel = new HashSet<>(setOfStudentsByLevelAndTopic);
+setOfInactiveTopicSubscribersByLevel.removeAll(setOfActiveTopicSubscribersByLevel);
+
+if(setOfInactiveTopicSubscribersByLevel.isEmpty()) return null;
+
+return String.join(", ", setOfInactiveTopicSubscribersByLevel);
+
+}
+
+private static String convertToString(String[][] channelsToPublishTo){
+
+String stringFormat = "";
+for(int index = 0; index < channelsToPublishTo.length; index++){
+String[] studentEnabledChannels = channelsToPublishTo[index];
+String channels = "(";
+channels += String.join(", ", studentEnabledChannels);
+channels += ")";
+stringFormat += channels;
+}
+return stringFormat;
+
+}
+
+private static String[] getPublishedStudentsName(String[] activeTopicSubscribersByLevel,
+String[][][] students){
+
+String[] publishedStudentsName = new String[activeTopicSubscribersByLevel.length];
+
+for(int counter = 0; counter < activeTopicSubscribersByLevel.length; counter++){
+if(activeTopicSubscribersByLevel[counter].equals
+(students[Integer.parseInt(activeTopicSubscribersByLevel[counter]) - 1][0][0]));
+publishedStudentsName[counter] = 
+(students[Integer.parseInt(activeTopicSubscribersByLevel[counter]) - 1][1][0]);
+
+
+}
+return publishedStudentsName;
+}
+
+private static String[][] getChannelsToPublishTo(String[] activeTopicSubscribersByLevel,
+String[][][] students){
+
+String[][] channelsToPublishTo =  new String[activeTopicSubscribersByLevel.length][];
+for(int index = 0; index < activeTopicSubscribersByLevel.length; index++){
+String[] studentEnabledChannels = getStudentEnabledChannels(activeTopicSubscribersByLevel[index], students);
+channelsToPublishTo[index] = studentEnabledChannels;
+}
+
+return channelsToPublishTo;
+}
+
+private static String[] getActiveTopicSubscribersByLevel(String[] studentsByLevelAndTopic,
+String[] activeDndStudents) {
+
+String activeTopicSubscribersByLevel = "";
+for(int index = 0; index < studentsByLevelAndTopic.length; index++){
+for(int counter = 0; counter < activeDndStudents.length; counter++){
+if(studentsByLevelAndTopic[index].equals(activeDndStudents[counter])){
+activeTopicSubscribersByLevel += studentsByLevelAndTopic[index] + ", ";
+break;
+}
+
+}
+}
+
+return activeTopicSubscribersByLevel.split(", ");
+//return activeTopicSubscribersByLevel;
+}
+
+
+private static String[] filterStudentsByLevelAndTopic(String[] studentsInSameLevel,
+String[] topicSubscribers){
+
+String studentsInSameLevelAndTopics = "";
+
+for(int index = 0; index < studentsInSameLevel.length; index++){
+for(int counter = 0; counter < topicSubscribers.length; counter++){
+if(studentsInSameLevel[index].equals(topicSubscribers[counter])){
+studentsInSameLevelAndTopics += studentsInSameLevel[index] + ", ";
+break;
+}
+}
+}
+
+return studentsInSameLevelAndTopics.split(", ");
+}
+
+
+
+private static String[] getNonDndStudents(String[][][] students){
+
+String activeDndStudents = "";
+for(int index = 0; index < students.length; index++){
+if(students[index][5][0].equals("Off"))
+activeDndStudents += students[index][0][0] + ", ";
+}
+
+return activeDndStudents.split(", ");
+}
+
+private static String[] getTopicSubscribers(String topic,
+String[][][] students){
+
+String topicSubscribers = "" ;
+for(int index = 0; index < students.length; index++){
+//String[] subscribedTopics = students[index][3];
+if(hasSubscribedTo(topic, students[index][0][0],
+students))
+topicSubscribers += students[index][0][0] + ", ";
+}
+
+return topicSubscribers.split(", ");
+
+
+}
+
+private static String[] filterStudentsByAudience(String audienceToPublishTo,
+String[] audience, String[][][] students){
+
+String studentsInSameLevel = "";
+
+if(audienceToPublishTo.equals("All")){
+for(int index = 0; index < students.length; index++){
+studentsInSameLevel += students[index][0][0] + ", ";
+}
+
+return studentsInSameLevel.split(", ");}
+
+for(int index = 0; index < students.length; index++){
+if(audienceToPublishTo.equals(students[index][2][0]))
+studentsInSameLevel += students[index][0][0] + ", ";
+}
+return studentsInSameLevel.split(", ");
+
+}
 
 private static boolean isAudienceValid(String audienceToPublishTo, 
 String[] audience){
@@ -111,14 +490,6 @@ return true;
 }
 return false;
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -160,10 +531,6 @@ return students[index][5][0];
 return studentId + "not found";
 
 }
-
-
-
-
 
 
 
