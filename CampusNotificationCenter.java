@@ -2,6 +2,8 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.HashMap;
+
 
 public class CampusNotificationCenter {
 
@@ -26,7 +28,9 @@ String[][][] students = {
 //String[] notificationColumns = new String[4];
 ArrayList<String[]> notifications = new ArrayList<>();
 //ArrayList<String>[] studentsInbox = new ArrayList[students.length];
+HashMap<String, ArrayList<String>> studentsInbox = new HashMap<>();
 //List<String> inbox = new ArrayList<>();
+
 
 String studentTable = viewStudents(students);
 System.out.print(studentTable);
@@ -88,8 +92,11 @@ updateStudentDND("4", students);
 System.out.println(getStudentDND("4", students));
 System.out.println(toggleDND("4", students));
 System.out.println(getStudentDND("4", students));
+
 System.out.println(publishNotification("topic", "Timetable Update",
-"The Physics exam has moved to Friday at 9am in Hall B.", "5", audience));
+"The Physics exam has moved to Friday at 9am in Hall B.", "5", audience,
+students, notifications, studentsInbox));
+
 
 System.out.println("Students in 200 level are : " + Arrays.toString
 (filterStudentsByAudience("200", audience, students)));
@@ -135,18 +142,84 @@ System.out.println(convertToString(channelsToPublishTo));
 
 System.out.println(publishNonEmergencyTopicsOne("Assignments", "Assignment 101",
 "To be submiited tomorrow", "200", audience,
-students, notifications));
+students, notifications, studentsInbox));
 
 
 System.out.println(publishNonEmergencyTopicsOne("Exams", "Timetable Update",
 "The Physics exam has moved to Friday at 9am in Hall B.", "All", audience,
-students, notifications));
+students, notifications, studentsInbox));
+
+
+String message = """
+Because these are zero-width assertions, they split the string
+between the groups without consuming or deleting the parentheses themselves,
+Because these are zero-width assertions, they split the string between,
+the groups without consuming or deleting the parentheses themselves.
+""";
+
+System.out.println(shortenMessage(message));
+
+//{Ada=[The Physics exam has moved to Friday ...
+//[ALERT] Timetable Update
+//]}
+
+//System.out.println(sendNotificationToStudentInbox("1", "Exams", "Timetable Update",
+//"The Physics exam has moved to Friday at 9am in Hall B.", studentsInbox, students, studentsInbox));
+
+System.out.println(studentsInbox);
+
+System.out.println("Look1: " + viewInboxOf("1", students,
+studentsInbox));
+
+
+System.out.println("Look2: " + viewInboxOf("2", students,
+studentsInbox));
 
 }
 
 
+public static String viewInboxOf(String studentId, String[][][] students,
+HashMap<String, ArrayList<String>> studentsInbox){
+
+String studentName = students[Integer.parseInt(studentId) - 1][1][0];
+String inboxHeader =  createInboxHeader(studentName);
+ArrayList<String> studentInbox = studentsInbox.get(studentName);
+
+//String channelBoundaryRegex = "(?=(?:\\[ALERT\\]\\s*)?\\[(?:SMS|Email|App)\\s*\\|)";
+//String channelBoundaryRegex = "(?=(?:\\[ALERT\\]|\\[(?:SMS|Email)\\b|Subject:\\s*\\[Email\\b))";
+String channelBoundaryRegex = "(?=(?:\\[(?:App|SMS)\\b|Subject:))";
+if(studentsInbox.containsKey(studentName)) {
+int itemNumber = 1;
+
+for(String studentInboxEntry : studentInbox){
+String[] channelItems = studentInboxEntry.split(channelBoundaryRegex);
+for(String item : channelItems){
+String cleaned = item.trim();
+if(!cleaned.isEmpty())
+inboxHeader += itemNumber++ + ". " + cleaned + System.lineSeparator();
+
+}
+}
+
+return inboxHeader;
+}
+
+return "Inbox is empty!";
+
+
+} 
+
+private static String createInboxHeader(String studentName){
+
+String viewInboxFormat = "--- Inbox for %s ---%n";
+return String.format(viewInboxFormat, studentName);
+
+}
+
 public static String publishNotification(String topic, String title,
-String message, String audienceToPublishTo, String[] audience) {
+String message, String audienceToPublishTo, String[] audience,
+String[][][] students, ArrayList<String[]> notifications,
+HashMap<String, ArrayList<String>> studentsInbox) {
 
 if(message.isBlank())
 return "message must not be empty!";
@@ -157,7 +230,9 @@ return "title must not exceed 30 characters!";
 if(!isAudienceValid(audienceToPublishTo, 
 audience)) return "Unknown audience!";
 
-return "passed";
+return publishNonEmergencyTopicsOne(topic, title,
+message, audienceToPublishTo, audience,
+students, notifications, studentsInbox);
 
 }
 
@@ -194,9 +269,11 @@ activeTopicSubscribersByLevel);
 return inactive;
 }
 
+
 private static String publishNonEmergencyTopicsOne(String topic, String title,
 String message, String audienceToPublishTo, String[] audience,
-String[][][] students, ArrayList<String[]> notifications){
+String[][][] students, ArrayList<String[]> notifications,
+HashMap<String, ArrayList<String>> studentsInbox){
 
 
 String[] studentsInSameLevel = filterStudentsByAudience(audienceToPublishTo,
@@ -217,10 +294,91 @@ students);
 String notificationsReportEntry = generateNotificationReportEntry(channelsToPublishTo, notifications, students, 
 activeTopicSubscribersByLevel, studentsByLevelAndTopic);
 
+String output = "";
+for(int index = 0; index < activeTopicSubscribersByLevel.length; index++){
+
+output = sendNotificationToStudentInbox(activeTopicSubscribersByLevel[index], 
+topic, title, message, studentsInbox, students, notificationsReportEntry);
+
+
+}
 
 
 return notificationsReportEntry;
 }
+
+
+
+private static String sendNotificationToStudentInbox(String studentId, String topic, String title,
+String message, HashMap<String, ArrayList<String>>studentsInbox,
+String[][][] students, String notificationsReportEntry){
+
+ArrayList<String> inbox = new ArrayList<>();
+String inboxContent = createInboxFormat(studentId, topic, title,
+message, students, notificationsReportEntry);
+inbox.add(inboxContent);
+studentsInbox.put(students[Integer.parseInt(studentId) - 1][1][0], inbox);
+
+return inboxContent;
+
+}
+
+
+private static String createInboxFormat(String studentId, String topic, String title,
+String message, String[][][] students, String notificationsReportEntry){
+
+String[] studentEnabledChannels = getStudentEnabledChannels(studentId, 
+students);
+
+String inboxContent = "";
+
+for(int index = 0; index < studentEnabledChannels.length; index++){
+
+if(studentEnabledChannels[index].equals("SMS")){
+
+if(message.length() > 40)
+message = shortenMessage(message);
+
+String messageFormat = "%s%s%n";
+String messageSent = String.format(messageFormat, "[SMS | " + topic + " | " + notificationsReportEntry.substring(13, 15) + "] ",
+message);
+inboxContent += messageSent;
+}
+
+if(studentEnabledChannels[index].equals("Email")){
+
+String emailFormat = "Subject: %s%nBody: %s%n";
+String mail = String.format(emailFormat, "[Email | " + topic + " | " + notificationsReportEntry.substring(13, 15) + "] ",
+title, message);
+inboxContent += mail;
+}
+
+
+if(studentEnabledChannels[index].equals("App")){
+
+String appFormat = "%s%s [ALERT] %n";
+String app = String.format(appFormat, "[App | " + topic + " | " + notificationsReportEntry.substring(13, 15) + "] ",
+title);
+inboxContent += app;
+}
+
+}
+return inboxContent;
+
+
+}
+
+
+
+
+
+private static String shortenMessage(String message){
+
+String shortenedMessage = message.substring(0, 37);
+return shortenedMessage += "...";
+}
+
+
 
 
 private static String generateNotificationReportEntry(String[][] channelsToPublishTo,
@@ -252,9 +410,6 @@ students);
 }
 
 notifications.add(notificationsColumn);
-
-
-
 
 
 String deliveredContent = formatDeliveryDetails(notificationsColumn);
